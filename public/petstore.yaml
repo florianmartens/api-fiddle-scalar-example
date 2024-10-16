@@ -1,0 +1,530 @@
+openapi: 3.1.0
+info:
+  title: Api-fiddle Bookstore Example
+  description: A basic example API for managing a bookstore's book collection.
+  version: 1.0.0
+paths:
+  /books:
+    get:
+      summary: Get book list
+      tags:
+        - books
+      description: >
+        Fetches a comprehensive list of all books available in the bookstore.
+        Each book object includes essential details such as the book's ID, name,
+        and publication date.
+
+
+        This endpoint is paginated using the 'page' syntax.
+      operationId: getBookList
+      responses:
+        "200":
+          description: A JSON array containing book objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Book"
+        "400":
+          description: The server could not understand the request due to invalid syntax.
+            The client should modify the request and try again.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                    default: error
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        field:
+                          type: string
+                        message:
+                          type: string
+                      required:
+                        - field
+                        - message
+                required:
+                  - status
+                  - message
+        "401":
+          description: Authentication is required to access the requested resource. The
+            client must include the appropriate credentials.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                    default: error
+                  message:
+                    type: string
+                    enum:
+                      - Unauthorized
+                    default: Unauthorized
+                required:
+                  - status
+                  - message
+        "403":
+          description: The server understood the request, but refuses to authorize it.
+            Ensure the client has appropriate permissions.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                    default: error
+                  message:
+                    type: string
+                    enum:
+                      - Forbidden
+                    default: Forbidden
+                required:
+                  - status
+                  - message
+        "500":
+          description: The server encountered an unexpected condition that prevented it
+            from fulfilling the request. Report the issue to the support team if
+            it persists.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - error
+                    default: error
+                  message:
+                    type: string
+                    enum:
+                      - Internal Server Error
+                    default: Internal Server Error
+                required:
+                  - status
+                  - message
+      parameters:
+        - $ref: "#/components/parameters/title"
+        - $ref: "#/components/parameters/authorid"
+    post:
+      summary: Create book
+      tags:
+        - books
+      description: >
+        Creates a new book entry in the bookstore. The request must include the
+        book's name and can optionally include the publication date.
+      operationId: createBook
+      requestBody:
+        description: Details of the book to be created.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  description: The title of the book.
+                publishedAt:
+                  type: string
+                  format: date-time
+                  description: The date and time when the book was published.
+      responses:
+        "201":
+          description: The request was successful, and a new resource was created. The URI
+            of the newly created resource can be found in the response's
+            Location header.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - success
+                    default: success
+                  data:
+                    $ref: "#/components/schemas/Book"
+                required:
+                  - status
+                  - data
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /books/{bookId}:
+    delete:
+      summary: Delete book
+      tags:
+        - books
+      description: >
+        Deletes a specific book from the bookstore using its unique identifier.
+        The operation confirms successful deletion.
+      operationId: deleteBook
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      responses:
+        "204":
+          $ref: "#/components/responses/NoContent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalServerErrror"
+    get:
+      summary: Get book
+      tags:
+        - books
+      description: >
+        Fetches details of a specific book by its unique identifier. The
+        response includes the book's name and publication date.
+      operationId: getBook
+      parameters:
+        - $ref: "#/components/parameters/bookId"
+      responses:
+        "200":
+          description: A JSON object containing the book details.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Book"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerErrror"
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          $ref: "#/components/schemas/AuthorSummary"
+        fullText:
+          type: string
+      required:
+        - id
+        - title
+        - author
+        - fullText
+    BookCreate:
+      type: object
+      properties:
+        title:
+          type: string
+        fullText:
+          type: string
+        authorId:
+          type: integer
+      description: Data transfer object for creating a new Book.
+      x-fiddle-dto-info:
+        baseSchemaName: Book
+      required:
+        - fullText
+        - authorId
+    BookUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        fullText:
+          type: string
+        authorId:
+          type: number
+      description: Data transfer object for updating all fields of an existing Book
+        (PUT operation).
+      x-fiddle-dto-info:
+        baseSchemaName: Book
+      required:
+        - fullText
+        - author
+        - title
+        - authorId
+    BookPartialUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        fullText:
+          type: string
+      description: Data transfer object for partially updating an existing Book (PATCH
+        operation).
+      x-fiddle-dto-info:
+        baseSchemaName: Book
+      required: []
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        numberOfBooksPublished:
+          type: string
+      required:
+        - id
+        - name
+        - address
+        - city
+        - numberOfBooksPublished
+    AuthorCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        numberOfBooksPublished:
+          type: string
+      description: Data transfer object for creating a new Author.
+      x-fiddle-dto-info:
+        baseSchemaName: Author
+      required:
+        - address
+        - city
+        - name
+        - numberOfBooksPublished
+    AuthorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        numberOfBooksPublished:
+          type: string
+      description: Data transfer object for updating all fields of an existing Author
+        (PUT operation).
+      x-fiddle-dto-info:
+        baseSchemaName: Author
+    AuthorPartialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+      description: Data transfer object for partially updating an existing Author
+        (PATCH operation).
+      x-fiddle-dto-info:
+        baseSchemaName: Author
+    AuthorSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+      description: A simplified representation of a Author, typically used in list views.
+      x-fiddle-dto-info:
+        baseSchemaName: Author
+      required:
+        - id
+    BookSummary:
+      type: object
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        id:
+          type: number
+      x-fiddle-dto-info:
+        baseSchemaName: Book
+      required:
+        - id
+  parameters:
+    bookId:
+      name: bookId
+      in: path
+      required: true
+      schema:
+        type: number
+    title:
+      required: false
+      explode: false
+      name: title
+      in: query
+      style: form
+      description: Filter the list of books according to the title.
+      schema:
+        type: string
+    authorid:
+      required: false
+      explode: false
+      name: authorid
+      in: query
+      style: form
+      description: Filter the list of books accodring to the authorId
+      schema:
+        type: integer
+  responses:
+    Accepted:
+      description: The request has been accepted for processing, but the processing
+        has not been completed. The request might be processed later.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Accepted
+                default: Accepted
+            required:
+              - message
+    BadRequest:
+      description: The server could not understand the request due to invalid syntax.
+        The client should modify the request and try again.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    message:
+                      type: string
+                  required:
+                    - message
+            required:
+              - message
+    NotFound:
+      description: The server cannot find the requested resource. The endpoint may be
+        invalid or the resource may no longer exist.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Not Found
+                default: Not Found
+            required:
+              - message
+    Conflict:
+      description: The request could not be completed due to a conflict with the
+        current state of the resource. Resolve the conflict and try again.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Conflict
+                default: Conflict
+            required:
+              - message
+    Unauthorized:
+      description: Authentication is required to access the requested resource. The
+        client must include the appropriate credentials.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Unauthorized
+                default: Unauthorized
+            required:
+              - message
+    Forbidden:
+      description: The server understood the request, but refuses to authorize it.
+        Ensure the client has appropriate permissions.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Forbidden
+                default: Forbidden
+            required:
+              - message
+    NoContent:
+      description: The request was successful, but there is no content to return in
+        the response.
+      content:
+        application/json:
+          schema:
+            type: "null"
+    InternalServerErrror:
+      description: The server encountered an unexpected condition that prevented it
+        from fulfilling the request. Report the issue to the support team if it
+        persists.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                enum:
+                  - Internal Server Error
+                default: Internal Server Error
+            required:
+              - message
+tags:
+  - name: books
